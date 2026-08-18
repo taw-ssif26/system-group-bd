@@ -1,4 +1,8 @@
 import Link from 'next/link'
+import Image from 'next/image'
+
+const LOGO =
+  'https://systemgroupbd.com/wp-content/uploads/2023/11/system-group-logo.png'
 
 const links = {
   Company: [
@@ -24,20 +28,24 @@ export default function Footer() {
     <footer className="bg-sg-deep border-t border-sg-border">
       <div className="sg-container py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
-          {/* Brand */}
           <div>
-            <div className="mb-4">
-              <span className="font-display font-light text-lg tracking-[0.12em] text-sg-white uppercase">
-                System Group
-              </span>
-              <br />
-              <span className="font-mono text-[0.6rem] tracking-[0.3em] text-sg-gold uppercase">
-                Bangladesh
-              </span>
+            <div className="relative w-[180px] h-[60px] mb-5">
+              <Image
+                src={LOGO}
+                alt="System Group Bangladesh"
+                fill
+                sizes="180px"
+                className="object-contain object-left"
+              />
             </div>
+
             <p className="font-sans text-xs text-sg-muted leading-relaxed max-w-xs">
-              Established 2009. A diversified business ecosystem building Bangladesh's future.
+              Established in 2009. A diversified business ecosystem
+              building Bangladesh's future through real estate,
+              construction, technology, telecommunications, trading,
+              lifestyle and allied ventures.
             </p>
+
             <p className="font-mono text-[0.65rem] tracking-[0.25em] text-sg-gold uppercase mt-4">
               Xplore Beyond!
             </p>
@@ -45,12 +53,17 @@ export default function Footer() {
 
           {Object.entries(links).map(([group, items]) => (
             <div key={group}>
-              <span className="sg-eyebrow block mb-6">{group}</span>
+              <span className="sg-eyebrow block mb-6">
+                {group}
+              </span>
+
               <ul className="space-y-3">
-                {items.map(item => (
+                {items.map((item) => (
                   <li key={item.href}>
-                    <Link href={item.href}
-                      className="font-sans text-sm text-sg-muted hover:text-sg-gold transition-colors">
+                    <Link
+                      href={item.href}
+                      className="font-sans text-sm text-sg-muted hover:text-sg-gold transition-colors"
+                    >
                       {item.label}
                     </Link>
                   </li>
@@ -62,10 +75,13 @@ export default function Footer() {
 
         <div className="mt-16 pt-8 border-t border-sg-border flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="font-mono text-xs text-sg-muted">
-            © {new Date().getFullYear()} System Group Bangladesh. All rights reserved.
+            © {new Date().getFullYear()} System Group Bangladesh.
+            All rights reserved.
           </p>
+
           <p className="font-mono text-xs text-sg-muted">
-            153 Kapasgola Road, Chawkbazar, Chattogram 4203
+            System Imperial Complex (6th Floor), Kapasgola Road,
+            Chawkbazar, Chattogram
           </p>
         </div>
       </div>
