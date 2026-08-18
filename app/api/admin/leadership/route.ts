@@ -14,12 +14,46 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireAuth(['SUPER_ADMIN','ADMIN'])
+  const { session, error } = await requireAuth([
+    'SUPER_ADMIN',
+    'ADMIN',
+  ])
+
   if (error) return error
+
   const body = await req.json()
   const parsed = schema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 422 })
-  const member = await prisma.leadershipMember.create({ data: parsed.data })
-  await prisma.auditLog.create({ data: { adminUserId: session!.user.id!, action: 'CREATE', entity: 'LeadershipMember', entityId: member.id } })
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        error: 'Validation failed',
+        details: parsed.error.flatten(),
+      },
+      { status: 422 }
+    )
+  }
+
+  const member = await prisma.leadershipMember.create({
+    data: {
+      name: parsed.data.name,
+      position: parsed.data.position,
+      biography: parsed.data.biography,
+      quote: parsed.data.quote ?? null,
+      linkedinUrl: parsed.data.linkedinUrl ?? null,
+      displayOrder: parsed.data.displayOrder ?? 0,
+      isPublished: parsed.data.isPublished ?? true,
+    },
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      adminUserId: session!.user.id!,
+      action: 'CREATE',
+      entity: 'LeadershipMember',
+      entityId: member.id,
+    },
+  })
+
   return NextResponse.json(member, { status: 201 })
 }
