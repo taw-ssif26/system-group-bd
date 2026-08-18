@@ -7,7 +7,7 @@ interface Props {
   settings?: Record<string, string>
 }
 
-export default function AboutSection({ settings = {} }: Props) {
+export default function AboutSection({ settings = {} }: Props = {}) {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-100px' })
 
