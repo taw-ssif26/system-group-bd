@@ -8,8 +8,13 @@ const schema = z.object({
   slug: z.string().min(2),
   department: z.string().min(2),
   location: z.string().min(2),
-  employmentType: z.enum(['FULL_TIME','PART_TIME','CONTRACT','INTERNSHIP']),
-  status: z.enum(['DRAFT','OPEN','CLOSED']),
+  employmentType: z.enum([
+    'FULL_TIME',
+    'PART_TIME',
+    'CONTRACT',
+    'INTERNSHIP',
+  ]),
+  status: z.enum(['DRAFT', 'OPEN', 'CLOSED']),
   description: z.string().min(10),
   responsibilities: z.string().min(5),
   requirements: z.string().min(5),
@@ -17,14 +22,66 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireAuth(['SUPER_ADMIN','ADMIN','RECRUITER'])
+  const { session, error } = await requireAuth([
+    'SUPER_ADMIN',
+    'ADMIN',
+    'RECRUITER',
+  ])
+
   if (error) return error
+
   const body = await req.json()
+
   const parsed = schema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 422 })
-  const existing = await prisma.job.findUnique({ where: { slug: parsed.data.slug } })
-  if (existing) return NextResponse.json({ error: 'Slug already exists.' }, { status: 409 })
-  const job = await prisma.job.create({ data: { ...parsed.data, deadline: parsed.data.deadline ? new Date(parsed.data.deadline) : null } })
-  await prisma.auditLog.create({ data: { adminUserId: session!.user.id!, action: 'CREATE', entity: 'Job', entityId: job.id } })
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        error: 'Validation failed',
+        details: parsed.error.flatten(),
+      },
+      { status: 422 }
+    )
+  }
+
+  const existing = await prisma.job.findUnique({
+    where: {
+      slug: parsed.data.slug,
+    },
+  })
+
+  if (existing) {
+    return NextResponse.json(
+      { error: 'Slug already exists.' },
+      { status: 409 }
+    )
+  }
+
+  const job = await prisma.job.create({
+    data: {
+      title: parsed.data.title,
+      slug: parsed.data.slug,
+      department: parsed.data.department,
+      location: parsed.data.location,
+      employmentType: parsed.data.employmentType,
+      status: parsed.data.status,
+      description: parsed.data.description,
+      responsibilities: parsed.data.responsibilities,
+      requirements: parsed.data.requirements,
+      deadline: parsed.data.deadline
+        ? new Date(parsed.data.deadline)
+        : null,
+    },
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      adminUserId: session!.user.id!,
+      action: 'CREATE',
+      entity: 'Job',
+      entityId: job.id,
+    },
+  })
+
   return NextResponse.json(job, { status: 201 })
 }
