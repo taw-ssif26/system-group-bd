@@ -20,7 +20,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json()
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 422 })
-  const concern = await prisma.sisterConcern.update({ where: { id: params.id }, data: parsed.data })
+
+  const concern = await prisma.sisterConcern.update({
+    where: { id: params.id },
+    data: {
+      ...parsed.data,
+      ...(parsed.data.industry
+        ? { industry: parsed.data.industry as any }
+        : {}),
+    },
+  })
+
   await prisma.auditLog.create({ data: { adminUserId: session!.user.id!, action: 'UPDATE', entity: 'SisterConcern', entityId: concern.id } })
   return NextResponse.json(concern)
 }
