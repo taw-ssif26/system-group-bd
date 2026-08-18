@@ -1,0 +1,438 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  RECRUITER
+}
+
+enum Industry {
+  REAL_ESTATE
+  CONSTRUCTION
+  ICT
+  TELECOM
+  TRADING
+  LIFESTYLE
+  AGRICULTURE
+  ELECTRONICS
+  GROOMING
+  INDUSTRIAL
+}
+
+enum ProjectStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  AVAILABLE
+}
+
+enum NewsStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum NewsCategory {
+  PRESS_RELEASE
+  CORPORATE_ANNOUNCEMENT
+  PROJECT_LAUNCH
+  MEDIA_COVERAGE
+  AWARD
+  INVESTMENT
+  CAMPAIGN
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  PDF
+  DOCUMENT
+}
+
+enum JobStatus {
+  OPEN
+  CLOSED
+  DRAFT
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+}
+
+enum ApplicationStatus {
+  NEW
+  REVIEWING
+  SHORTLISTED
+  INTERVIEW
+  REJECTED
+  HIRED
+}
+
+enum InquiryStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  ARCHIVED
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  CREATE
+  UPDATE
+  DELETE
+  PUBLISH
+  UNPUBLISH
+  UPLOAD
+  DOWNLOAD
+  STATUS_CHANGE
+}
+
+// ─────────────────────────────────────────────
+// ADMIN USER
+// ─────────────────────────────────────────────
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(EDITOR)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  newsArticles NewsArticle[]
+  mediaAssets  MediaAsset[]
+  auditLogs    AuditLog[]
+
+  @@index([email])
+}
+
+// ─────────────────────────────────────────────
+// SISTER CONCERN
+// ─────────────────────────────────────────────
+
+model SisterConcern {
+  id               String    @id @default(cuid())
+  name             String
+  slug             String    @unique
+  shortDescription String
+  description      String    @db.Text
+  industry         Industry
+  logo             String?
+  coverImage       String?
+  website          String?
+  displayOrder     Int       @default(0)
+  isFeatured       Boolean   @default(false)
+  isPublished      Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  projects Project[]
+  outlets  Outlet[]
+  inquiries Inquiry[]
+
+  @@index([slug])
+  @@index([industry])
+  @@index([isPublished])
+}
+
+// ─────────────────────────────────────────────
+// PROJECT
+// ─────────────────────────────────────────────
+
+model Project {
+  id               String        @id @default(cuid())
+  name             String
+  slug             String        @unique
+  description      String        @db.Text
+  location         String
+  status           ProjectStatus @default(ONGOING)
+  investment       String?       // e.g. "$3 million"
+  completionYear   Int?
+  displayOrder     Int           @default(0)
+  isFeatured       Boolean       @default(false)
+  isPublished      Boolean       @default(true)
+  featuredImage    String?
+  deletedAt        DateTime?     // soft delete
+
+  sisterConcernId  String
+  sisterConcern    SisterConcern @relation(fields: [sisterConcernId], references: [id])
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  // Relations
+  images    ProjectImage[]
+  documents ProjectDocument[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([isPublished])
+  @@index([sisterConcernId])
+}
+
+model ProjectImage {
+  id           String  @id @default(cuid())
+  projectId    String
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url          String
+  altText      String  @default("")
+  caption      String  @default("")
+  displayOrder Int     @default(0)
+}
+
+model ProjectDocument {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  url       String
+  type      String   // brochure | specification | floor-plan | pdf
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// LEADERSHIP
+// ─────────────────────────────────────────────
+
+model LeadershipMember {
+  id           String  @id @default(cuid())
+  name         String
+  position     String
+  biography    String  @db.Text
+  portrait     String?
+  quote        String?
+  linkedinUrl  String?
+  displayOrder Int     @default(0)
+  isPublished  Boolean @default(true)
+}
+
+// ─────────────────────────────────────────────
+// NEWS
+// ─────────────────────────────────────────────
+
+model NewsArticle {
+  id             String       @id @default(cuid())
+  title          String
+  slug           String       @unique
+  titleBn        String?      // Bengali title
+  excerpt        String
+  excerptBn      String?
+  content        String       @db.Text
+  contentBn      String?      @db.Text
+  category       NewsCategory
+  featuredImage  String?
+  status         NewsStatus   @default(DRAFT)
+  isFeatured     Boolean      @default(false)
+  publishedAt    DateTime?
+  scheduledAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  viewCount      Int          @default(0)
+  deletedAt      DateTime?
+
+  authorId       String
+  author         AdminUser    @relation(fields: [authorId], references: [id])
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([category])
+}
+
+// ─────────────────────────────────────────────
+// MEDIA
+// ─────────────────────────────────────────────
+
+model MediaAsset {
+  id           String     @id @default(cuid())
+  url          String
+  type         MediaType
+  filename     String
+  altText      String     @default("")
+  caption      String     @default("")
+  size         Int        // bytes
+  mimeType     String
+  uploadedById String
+  uploadedBy   AdminUser  @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime   @default(now())
+
+  galleryItems GalleryItem[]
+
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────
+// GALLERY
+// ─────────────────────────────────────────────
+
+model GalleryAlbum {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  category    String?
+  coverImage  String?
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items GalleryItem[]
+
+  @@index([slug])
+}
+
+model GalleryItem {
+  id           String       @id @default(cuid())
+  albumId      String
+  album        GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  mediaId      String
+  media        MediaAsset   @relation(fields: [mediaId], references: [id])
+  caption      String       @default("")
+  displayOrder Int          @default(0)
+}
+
+// ─────────────────────────────────────────────
+// CAREERS
+// ─────────────────────────────────────────────
+
+model Job {
+  id               String         @id @default(cuid())
+  title            String
+  slug             String         @unique
+  department       String
+  location         String
+  employmentType   EmploymentType @default(FULL_TIME)
+  description      String         @db.Text
+  requirements     String         @db.Text
+  responsibilities String         @db.Text
+  deadline         DateTime?
+  status           JobStatus      @default(DRAFT)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  applications JobApplication[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+model JobApplication {
+  id          String            @id @default(cuid())
+  jobId       String
+  job         Job               @relation(fields: [jobId], references: [id])
+  name        String
+  email       String
+  phone       String
+  coverLetter String?           @db.Text
+  resumeUrl   String
+  status      ApplicationStatus @default(NEW)
+  notes       String?           @db.Text
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([status])
+  @@index([jobId])
+}
+
+// ─────────────────────────────────────────────
+// INQUIRY / CONTACT
+// ─────────────────────────────────────────────
+
+model Inquiry {
+  id              String        @id @default(cuid())
+  name            String
+  email           String
+  phone           String?
+  concernId       String?
+  concern         SisterConcern? @relation(fields: [concernId], references: [id])
+  subject         String
+  message         String        @db.Text
+  status          InquiryStatus @default(NEW)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────
+// OUTLETS
+// ─────────────────────────────────────────────
+
+model Outlet {
+  id              String         @id @default(cuid())
+  name            String
+  type            String         // retail | office | showroom
+  address         String
+  city            String
+  latitude        Float?
+  longitude       Float?
+  phone           String?
+  openingHours    String?
+  website         String?
+  isActive        Boolean        @default(true)
+  sisterConcernId String?
+  sisterConcern   SisterConcern? @relation(fields: [sisterConcernId], references: [id])
+
+  @@index([city])
+  @@index([isActive])
+}
+
+// ─────────────────────────────────────────────
+// SITE SETTINGS
+// ─────────────────────────────────────────────
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+// ─────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  adminUserId  String
+  adminUser    AdminUser   @relation(fields: [adminUserId], references: [id])
+  action       AuditAction
+  entity       String
+  entityId     String?
+  metadata     Json?
+  ipAddress    String?
+  createdAt    DateTime    @default(now())
+
+  @@index([adminUserId])
+  @@index([entity])
+  @@index([createdAt])
+}
