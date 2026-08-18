@@ -15,10 +15,25 @@ export async function generateMetadata() {
 }
 
 export default async function AboutPage() {
-  const leadership = await prisma.leadershipMember.findMany({
-    where: { isPublished: true },
-    orderBy: { displayOrder: 'asc' },
-  })
+  // Fetch leadership members and site settings concurrently
+  const [leadership, rawSettings] = await Promise.all([
+    prisma.leadershipMember.findMany({
+      where: { isPublished: true },
+      orderBy: { displayOrder: 'asc' },
+    }),
+    // Adjust model name if your Prisma schema uses `setting` or `siteSetting`
+    prisma.siteSetting.findMany().catch(() => []),
+  ])
+
+  // Convert settings array into a Record<string, string> map
+  const settingsMap: Record<string, string> = {}
+  if (Array.isArray(rawSettings)) {
+    rawSettings.forEach((item: { key: string; value: string }) => {
+      if (item.key) {
+        settingsMap[item.key] = item.value
+      }
+    })
+  }
 
   return (
     <>
@@ -32,7 +47,7 @@ export default async function AboutPage() {
         </div>
       </div>
 
-      <AboutSection />
+      <AboutSection settings={settingsMap} />
       <TimelineSection />
       <LeadershipSection members={leadership} />
 
