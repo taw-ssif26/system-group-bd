@@ -53,14 +53,15 @@ export async function POST(req: NextRequest) {
   }
 
   const concern = await prisma.sisterConcern.create({
-    data: {
-      ...parsed.data,
-      name: parsed.data.name,
-      slug: parsed.data.slug,
-      shortDescription: parsed.data.shortDescription,
-      description: parsed.data.description,
-    },
-  })
+  data: {
+    ...parsed.data,
+    name: parsed.data.name,
+    slug: parsed.data.slug,
+    shortDescription: parsed.data.shortDescription,
+    description: parsed.data.description,
+    industry: parsed.data.industry,
+  },
+})
 
   await prisma.auditLog.create({
     data: {
