@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 422 })
   const existing = await prisma.sisterConcern.findUnique({ where: { slug: parsed.data.slug } })
   if (existing) return NextResponse.json({ error: 'Slug already exists.' }, { status: 409 })
-  const concern = await prisma.sisterConcern.create({ data: parsed.data })
+  const concern = await prisma.sisterConcern.create({   data: {     ...parsed.data,     name: parsed.data.name!,     slug: parsed.data.slug!,   }, })
   await prisma.auditLog.create({ data: { adminUserId: session!.user.id!, action: 'CREATE', entity: 'SisterConcern', entityId: concern.id } })
   return NextResponse.json(concern, { status: 201 })
 }
